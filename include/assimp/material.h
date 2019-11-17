@@ -910,6 +910,8 @@ public:
 
      /** Storage allocated */
     unsigned int mNumAllocated;
+
+    aiString mShaderName;
 };
 
 // Go back to extern "C" again

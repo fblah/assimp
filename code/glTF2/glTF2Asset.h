@@ -77,6 +77,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #   define ai_assert
 #endif
 
+#include "assimp/vrm/vrmmeta.h"
 
 #if _MSC_VER > 1500 || (defined __GNUC___)
 #       define ASSIMP_GLTF_USE_UNORDERED_MULTIMAP
@@ -721,6 +722,8 @@ namespace glTF2
     //! The material appearance of a primitive.
     struct Material : public Object
     {
+        std::string shaderName;
+
         //PBR metallic roughness properties
         PbrMetallicRoughness pbrMetallicRoughness;
 
@@ -762,6 +765,7 @@ namespace glTF2
             Ref<Material> material;
 
             struct Target {
+                std::string name;
                 AccessorList position, normal, tangent;
             };
             std::vector<Target> targets;
@@ -965,6 +969,21 @@ namespace glTF2
 
     };
 
+    struct GLTF2VRMMetadata
+    {
+        VRM::VRMMetadata *vrmdata;
+
+        std::map <std::string, std::string> materialShaderName;
+
+        void Read(Document& doc, Asset& r);
+
+        GLTF2VRMMetadata() : vrmdata(nullptr){}
+
+        ~GLTF2VRMMetadata(){
+            if (vrmdata) delete vrmdata;
+            vrmdata = nullptr;
+        }
+    };
 
     struct AssetMetadata
     {
@@ -1028,6 +1047,7 @@ namespace glTF2
         } extensionsUsed;
 
         AssetMetadata asset;
+        GLTF2VRMMetadata vrmdata;
 
 
         // Dictionaries for each type of object
