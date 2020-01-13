@@ -1333,8 +1333,9 @@ inline void GLTF2VRMMetadata::Read(Document& doc, Asset& r)
 			vrmdata->springs = new VRM::VRMSpring[vrmdata->springNum];
 			for (int i = 0; i < nodeArray->Size(); ++i) {
 				VRM::VRMSpring &s = vrmdata->springs[i];
+				// warning! stiffiness in VRM  <- stiffness in member
 				if (Value *v = FindMember((*nodeArray)[i], "stiffiness")) {
-					s.stiffiness = v->GetFloat();
+					s.stiffness = v->GetFloat();
 				}
 				if (Value *v = FindMember((*nodeArray)[i], "gravityPower")) {
 					s.gravityPower = v->GetFloat();
