@@ -51,6 +51,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <assimp/Importer.hpp>
 #include <assimp/ai_assert.h>
 #include <assimp/scene.h>
+#include <assimp/CreateAnimMesh.h>
 
 #include <fstream>
 #include <iomanip>
@@ -165,6 +166,93 @@ void MMDImporter::CreateDataFromImport(const pmx::PmxModel *pModel,
     pScene->mMeshes[i]->mMaterialIndex = i;
     indexStart += indexCount;
   }
+
+  volatile int indexStart = 0;
+  volatile int indexNext = 0;
+  for (unsigned int i = 0; i < pScene->mNumMeshes; i++) {
+	  volatile const int indexCount = pModel->materials[i].index_count;
+	  indexStart = indexNext;
+      indexNext += indexCount;
+
+	  //for (unsigned int i = 4, indexStart = 0; i < pScene->mNumMeshes; i++) {
+	    //unsigned int i = 0, indexStart = 0;
+        int morphTotal = 0;
+		for (unsigned int morphNo = 0; morphNo < pModel->morph_count; morphNo++) {
+
+			const auto &morph = pModel->morphs[morphNo];
+			if (morph.morph_type != pmx::MorphType::Vertex) {
+				continue;
+			}
+			if (morph.morph_name.length() <= 0) {
+				continue;
+			}
+			morphTotal++;
+		}
+
+    	auto *aim = pScene->mMeshes[i];
+		if (aim->mNumAnimMeshes == 0) {
+			aim->mNumAnimMeshes = (unsigned int)morphTotal;
+			aim->mAnimMeshes = new aiAnimMesh *[aim->mNumAnimMeshes];
+		}
+
+		int currentMorph = 0;
+		for (unsigned int morphNo = 0; morphNo < pModel->morph_count; morphNo++) {
+
+			const auto &morph = pModel->morphs[morphNo];
+			if (morph.morph_type != pmx::MorphType::Vertex) {
+				continue;
+			}
+			if (morph.morph_name.length() <= 0) {
+				continue;
+			}
+
+			int c = currentMorph;
+			currentMorph++;
+
+			aim->mAnimMeshes[c] = Assimp::aiCreateAnimMesh(aim);
+			aiAnimMesh &aiAnimMesh = *(aim->mAnimMeshes[c]);
+			{
+                for (int v=0; v<aiAnimMesh.mNumVertices; ++v){
+					//aiAnimMesh.mVertices[v] = aim->mVertices[v];
+					aiAnimMesh.mVertices[v].Set(0, 0, 0);
+                }
+            }
+
+			//vrm
+			aiAnimMesh.mName = morph.morph_name;
+
+			if (morph.vertex_offsets.get() > 0) {
+				aiVector3D dif;
+
+				for (unsigned int vertexId = 0; vertexId < morph.offset_count; vertexId++) {
+                    volatile const auto &ver = morph.vertex_offsets[vertexId];
+					volatile int targetIndex = ver.vertex_index;
+
+                    bool bFound = false;
+                    for (int uu=0; uu<indexCount; ++uu){
+						if (pModel->indices[indexStart + uu] == targetIndex){
+							targetIndex = uu;
+							bFound = true;
+							break;
+                        }
+                    }
+                    if (bFound == false){
+						continue;
+                    }
+
+					if (targetIndex < aiAnimMesh.mNumVertices) {
+						aiAnimMesh.mVertices[targetIndex].Set(
+								morph.vertex_offsets[vertexId].position_offset[0],
+								morph.vertex_offsets[vertexId].position_offset[1],
+								morph.vertex_offsets[vertexId].position_offset[2]
+                        );
+					}
+
+					aiAnimMesh.mWeight = 1.f;
+				}
+			}
+        }
+  }// morph end
 
   // create node hierarchy for bone position
   std::unique_ptr<aiNode *[]> ppNode(new aiNode *[pModel->bone_count]);
