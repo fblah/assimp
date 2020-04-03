@@ -219,7 +219,7 @@ void MMDImporter::CreateDataFromImport(const pmx::PmxModel *pModel,
 			    //vrm
 			    aiAnimMesh.mName = morph.morph_name;
 
-			    if (morph.vertex_offsets.get() > 0) {
+			    if (morph.vertex_offsets.get() != nullptr) {
 				    aiVector3D dif;
 
 				    for (unsigned int vertexId = 0; vertexId < morph.offset_count; vertexId++) {
